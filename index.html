@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+
+
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>vitalis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+
+  <body class="m-0 overflow-hidden bg-black font-sans text-white">
+    
+    <canvas id="canvas" class="block"></canvas>
+
+    <div id="control-panel" class="fixed top-6 right-6 z-50 w-72 bg-zinc-900 backdrop-blur-lg border border-white/10 rounded-xl shadow-2xl transition-all duration-500 overflow-hidden">
+  
+      <div id="panel-header" class="flex items-center justify-between px-5 py-4">
+          <h1 class="text-lg font-light tracking-widest uppercase text-white select-none">Controls</h1>
+          <button id="toggle-icon" class="text-white text-xl py-1 px-2 border-white/20 rounded-lg transition-transform cursor-pointer hover:bg-white/5 transition-colors duration-300">
+            ☰
+          </button>
+      </div>
+
+      <div id="panel-content" class="max-h-0 opacity-0 transition-all duration-500 ease-in-out px-5">
+        
+        <div class="flex flex-col gap-5">
+          <hr class="border-white/10">
+
+          <div class="flex flex-col gap-2">
+            <div class="flex justify-between">
+              <label class="text-xs font-bold text-zinc-500 uppercase">Gravity</label>
+              <span class="text-xs text-zinc-500">LOW - HIGH</span>
+            </div>
+            <input id="gravity-slider" type="range" min="0" max="10" class="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold text-zinc-500 uppercase">Friction</label>
+            <input id="friction-slider" type="range" min="0" max="100" class="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+          </div>
+          
+          <hr class="border-white/10">
+
+          <div>
+            <p class="text-xs font-bold text-zinc-500 uppercase mb-3">Presets</p>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btn-worms" class="bg-zinc-800 hover:bg-zinc-700 text-sm py-3 rounded-xl border border-white/5 transition-colors text-zinc-300">Worms</button>
+              <button id="btn-cells" class="bg-zinc-800 hover:bg-zinc-700 text-sm py-3 rounded-xl border border-white/5 transition-colors text-zinc-300">Cells</button>
+            </div>
+          </div>
+
+          <hr class="border-white/10">
+
+          <div>
+            <p class="text-xs font-bold text-zinc-500 uppercase mb-2">Attraction Matrix</p>
+
+            <div class="grid grid-rows-4 grid-cols-4 gap-1 mb-4 p-2 bg-black/20 rounded-lg border border-white/5">
+                
+                <div class="bg-zinc-800 text-white text-xs py-1.5 rounded text-center">1.0</div>
+                <div class="bg-zinc-800 text-white text-xs py-1.5 rounded text-center">0.5</div>
+                <div class="bg-zinc-800 text-white text-xs py-1.5 rounded text-center">-0.2</div>
+                <div class="bg-zinc-800 text-white text-xs py-1.5 rounded text-center">0.0</div>
+
+                <div class="bg-zinc-800 text-white text-xs py-1.5 rounded text-center">0.5</div>
+                <div class="bg-zinc-800 text-white text-xs py-1.5 rounded text-center">1.0</div>
+                <div class="bg-zinc-800 text-white text-xs py-1.5 rounded text-center">0.5</div>
+                <div class="bg-zinc-800 text-white text-xs py-1.5 rounded text-center">-0.1</div>
+
+                <div class="bg-zinc-800 text-white text-xs py-1.5 rounded text-center">-0.2</div>
+                <div class="bg-zinc-800 text-white text-xs py-1.5 rounded text-center">0.5</div>
+                <div class="bg-zinc-800 text-white text-xs py-1.5 rounded text-center">1.0</div>
+                <div class="bg-zinc-800 text-white text-xs py-1.5 rounded text-center">0.2</div>
+
+                <div class="bg-zinc-800 text-white text-xs py-1.5 rounded text-center">0.0</div>
+                <div class="bg-zinc-800 text-white text-xs py-1.5 rounded text-center">-0.1</div>
+                <div class="bg-zinc-800 text-white text-xs py-1.5 rounded text-center">0.2</div>
+                <div class="bg-zinc-800 text-white text-xs py-1.5 rounded text-center">1.0</div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+    
+  </body>
+
+
+</html>
