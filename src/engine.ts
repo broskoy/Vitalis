@@ -1,41 +1,37 @@
-// engine.ts
-import { State, type Particle } from './state';
+import { State } from './state';
 
-const canvas = document.getElementById('canvas') as HTMLCanvasElement;
-// Alpha: false helps performance and ensures the background fade works correctly
-const ctx = canvas.getContext('2d', { alpha: false })!;
-
-// Setup Offscreen Buffer (for trails)
-const buffer = document.createElement('canvas');
-const bctx = buffer.getContext('2d')!;
-
-const PARTICLE_COUNT = 800;
-const REPULSION_RANGE = 20;
+export type Particle = {
+    x: number; y: number;
+    vx: number; vy: number;
+    color: string; type: number;
+};
 
 let particles: Particle[] = [];
+let ctx: CanvasRenderingContext2D;
+let width = 0;
+let height = 0;
 
-// --- Helpers ---
-
-function resize() {
-    canvas.width = buffer.width = window.innerWidth;
-    canvas.height = buffer.height = window.innerHeight;
-}
+const PARTICLE_COUNT = 1000;
+const REPULSION_RANGE = 20;
 
 function createParticle(): Particle {
     const type = Math.floor(Math.random() * 4);
     const colors = ["#FF0000", "#00FFFF", "#00FF00", "#FFFF00"];
     return {
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
+        x: Math.random() * width,
+        y: Math.random() * height,
         vx: 0, vy: 0,
         color: colors[type],
         type: type
     };
 }
 
-// --- Core Physics ---
-
 function updatePhysics() {
+
+    const friction = State.friction;
+    const forceStrength = State.forceStrength;
+    const attractions = State.attractions;
+
     for (let i = 0; i < particles.length; i++) {
         const p1 = particles[i];
         let fx = 0, fy = 0;
@@ -47,29 +43,28 @@ function updatePhysics() {
             let dx = p2.x - p1.x;
             let dy = p2.y - p1.y;
 
-            // Toroidal Wrap (Shortest path across screen edges)
-            if (dx > canvas.width * 0.5) dx -= canvas.width;
-            if (dx < -canvas.width * 0.5) dx += canvas.width;
-            if (dy > canvas.height * 0.5) dy -= canvas.height;
-            if (dy < -canvas.height * 0.5) dy += canvas.height;
+            // Toroidal Wrap
+            if (dx > width * 0.5) dx -= width;
+            if (dx < -width * 0.5) dx += width;
+            if (dy > height * 0.5) dy -= height;
+            if (dy < -height * 0.5) dy += height;
 
             const distSq = dx * dx + dy * dy;
-            if (distSq > 6400) continue; // Optimization: Ignore far particles
+            if (distSq > 6400) continue;
 
             const dist = Math.sqrt(distSq);
 
-            // KEY: Read from the shared State object
-            const force = State.attractions[p1.type][p2.type];
+            const force = attractions[p1.type][p2.type];
 
             // Attraction
             if (dist > REPULSION_RANGE && dist < 80) {
-                const f = force * State.forceStrength / dist;
+                const f = force * forceStrength / dist;
                 fx += f * dx;
                 fy += f * dy;
             }
             // Repulsion
             if (dist > 0 && dist < REPULSION_RANGE) {
-                const f = -2.0 * State.forceStrength / dist;
+                const f = -2.0 * forceStrength / dist;
                 fx += f * dx;
                 fy += f * dy;
             }
@@ -80,36 +75,26 @@ function updatePhysics() {
 
     // Movement & Friction
     for (let p of particles) {
-        p.vx *= State.friction; // Read from State
-        p.vy *= State.friction;
+        p.vx *= friction;
+        p.vy *= friction;
         p.x += p.vx;
         p.y += p.vy;
 
         // Wrap Position
-        if (p.x < 0) p.x += canvas.width;
-        if (p.x > canvas.width) p.x -= canvas.width;
-        if (p.y < 0) p.y += canvas.height;
-        if (p.y > canvas.height) p.y -= canvas.height;
+        if (p.x < 0) p.x += width;
+        if (p.x > width) p.x -= width;
+        if (p.y < 0) p.y += height;
+        if (p.y > height) p.y -= height;
     }
 }
 
-// --- Render Loop ---
-
 function loop() {
-    // 1. Draw trails using buffer method
-    bctx.clearRect(0, 0, buffer.width, buffer.height);
-    bctx.drawImage(canvas, 0, 0);
-
-    // Clear screen with opaque color (Fixes alpha buildup)
+    // Clear screen
+    ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = "#111";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, width, height);
 
-    // Draw buffer back with transparency
-    ctx.globalAlpha = 0.85;
-    ctx.drawImage(buffer, 0, 0);
-    ctx.globalAlpha = 1.0;
-
-    // 2. Draw Particles
+    // Draw Particles
     for (let p of particles) {
         ctx.fillStyle = p.color;
         ctx.fillRect(p.x, p.y, 4, 4);
@@ -119,15 +104,24 @@ function loop() {
     requestAnimationFrame(loop);
 }
 
-// --- Public API ---
-
-export function initEngine() {
-    window.addEventListener('resize', resize);
-    resize();
-    resetParticles(); // Initial spawn
-    loop(); // Start loop
-}
-
 export function resetParticles() {
     particles = Array.from({ length: PARTICLE_COUNT }, createParticle);
+}
+
+
+export function initEngine(canvasElement: HTMLCanvasElement) {
+    ctx = canvasElement.getContext('2d')!;
+
+    const resize = () => {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvasElement.width = width;
+        canvasElement.height = height;
+    };
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    resetParticles();
+    loop();
 }

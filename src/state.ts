@@ -1,14 +1,4 @@
-
-
-export type Particle = {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    color: string;
-    type: number;
-};
-
+import { createMutable } from "solid-js/store";
 
 export const PRESETS = {
     default: [
@@ -38,8 +28,8 @@ export const PRESETS = {
 };
 
 
-export const State = {
+export const State = createMutable({
     friction: 0.8,
     forceStrength: 0.1,
     attractions: PRESETS.default
-};
+});
