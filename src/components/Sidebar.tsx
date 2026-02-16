@@ -9,12 +9,12 @@ export const Sidebar = () => {
   const [isOpen, setIsOpen] = createSignal(true);
 
   return (
-    <div class="fixed top-6 right-6 z-50 w-72 bg-zinc-900/90 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl transition-all duration-500 overflow-hidden">
+    <div class="fixed top-6 right-6 z-50 w-64 bg-zinc-900/90 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl transition-all duration-500 overflow-hidden">
       
       {/* Header */}
       <div class="flex items-center justify-between px-5 py-4">
         <h1 class="text-lg font-light tracking-widest uppercase text-white select-none">
-          Vitalis
+          Controls
         </h1>
         <button 
           onClick={() => setIsOpen(!isOpen())}
@@ -68,6 +68,12 @@ export const Sidebar = () => {
             <p class="text-xs font-bold text-zinc-500 uppercase mb-3">Presets</p>
             <div class="grid grid-cols-2 gap-2">
               <button 
+                onClick={() => { State.attractions = PRESETS.default; resetParticles(); }}
+                class="bg-zinc-800 hover:bg-zinc-700 text-sm py-2 rounded border border-white/5 text-zinc-300 transition-colors"
+              >
+                Default
+              </button>
+              <button 
                 onClick={() => { State.attractions = PRESETS.worms; resetParticles(); }}
                 class="bg-zinc-800 hover:bg-zinc-700 text-sm py-2 rounded border border-white/5 text-zinc-300 transition-colors"
               >
@@ -78,6 +84,13 @@ export const Sidebar = () => {
                 class="bg-zinc-800 hover:bg-zinc-700 text-sm py-2 rounded border border-white/5 text-zinc-300 transition-colors"
               >
                 Cells
+              </button>
+
+              <button 
+                onClick={() => { State.attractions = PRESETS.fireworks; resetParticles(); }}
+                class="bg-zinc-800 hover:bg-zinc-700 text-sm py-2 rounded border border-white/5 text-zinc-300 transition-colors"
+              >
+                Fireworks
               </button>
             </div>
           </div>
