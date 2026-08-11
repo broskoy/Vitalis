@@ -8,8 +8,10 @@ export type Particle = {
 
 let particles: Particle[] = [];
 let ctx: CanvasRenderingContext2D;
-let width = 0;
-let height = 0;
+let canvas: HTMLCanvasElement;
+let logicalWidth = 0;
+let logicalHeight = 0;
+let scale = 1;
 
 const PARTICLE_COUNT = 1000;
 const REPULSION_RANGE = 20;
@@ -18,8 +20,8 @@ function createParticle(): Particle {
     const type = Math.floor(Math.random() * 4);
     const colors = ["#FF0000", "#00FFFF", "#00FF00", "#FFFF00"];
     return {
-        x: Math.random() * width,
-        y: Math.random() * height,
+        x: Math.random() * logicalWidth,
+        y: Math.random() * logicalHeight,
         vx: 0, vy: 0,
         color: colors[type],
         type: type
@@ -44,10 +46,10 @@ function updatePhysics() {
             let dy = p2.y - p1.y;
 
             // Toroidal Wrap
-            if (dx > width * 0.5) dx -= width;
-            if (dx < -width * 0.5) dx += width;
-            if (dy > height * 0.5) dy -= height;
-            if (dy < -height * 0.5) dy += height;
+            if (dx > logicalWidth * 0.5) dx -= logicalWidth;
+            if (dx < -logicalWidth * 0.5) dx += logicalWidth;
+            if (dy > logicalHeight * 0.5) dy -= logicalHeight;
+            if (dy < -logicalHeight * 0.5) dy += logicalHeight;
 
             const distSq = dx * dx + dy * dy;
             if (distSq > 6400) continue;
@@ -81,23 +83,26 @@ function updatePhysics() {
         p.y += p.vy;
 
         // Wrap Position
-        if (p.x < 0) p.x += width;
-        if (p.x > width) p.x -= width;
-        if (p.y < 0) p.y += height;
-        if (p.y > height) p.y -= height;
+        if (p.x < 0) p.x += logicalWidth;
+        if (p.x > logicalWidth) p.x -= logicalWidth;
+        if (p.y < 0) p.y += logicalHeight;
+        if (p.y > logicalHeight) p.y -= logicalHeight;
     }
 }
 
 function loop() {
     // Clear screen
-    ctx.clearRect(0, 0, width, height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#111";
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw Particles
     for (let p of particles) {
         ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, 4, 4);
+        const px = p.x * scale;
+        const py = p.y * scale;
+        const size = Math.max(1, 4 * scale);
+        ctx.fillRect(px, py, size, size);
     }
 
     updatePhysics();
@@ -110,13 +115,16 @@ export function resetParticles() {
 
 
 export function initEngine(canvasElement: HTMLCanvasElement) {
-    ctx = canvasElement.getContext('2d')!;
+    canvas = canvasElement;
+    ctx = canvas.getContext('2d')!;
 
     const resize = () => {
-        width = window.innerWidth;
-        height = window.innerHeight;
-        canvasElement.width = width;
-        canvasElement.height = height;
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        scale = Math.min(canvas.width, canvas.height) / 1000;
+        logicalWidth = canvas.width / scale;
+        logicalHeight = canvas.height / scale;
     };
 
     window.addEventListener('resize', resize);
