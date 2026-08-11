@@ -10,11 +10,15 @@ const WORLD_WIDTH = 2000;
 const WORLD_HEIGHT = 2000;
 const PARTICLE_COUNT = 1000;
 const REPULSION_RANGE = 20;
-const CELL_SIZE = 80;
+const CELL_SIZE = 160;
 
 let particles: Particle[] = [];
 let ctx: CanvasRenderingContext2D;
 let canvas: HTMLCanvasElement;
+
+const cols = Math.ceil(WORLD_WIDTH / CELL_SIZE);
+const rows = Math.ceil(WORLD_HEIGHT / CELL_SIZE);
+const grid: Particle[][][] = Array.from({ length: cols }, () => Array.from({ length: rows }, () => []));
 
 // Camera state
 export let cameraX = WORLD_WIDTH / 2;
@@ -38,11 +42,12 @@ function updatePhysics() {
     const forceStrength = State.forceStrength;
     const attractions = State.attractions;
 
-    const cols = Math.ceil(WORLD_WIDTH / CELL_SIZE);
-    const rows = Math.ceil(WORLD_HEIGHT / CELL_SIZE);
-
     // 1. Clear and populate Spatial Grid
-    const grid: Particle[][][] = Array.from({ length: cols }, () => Array.from({ length: rows }, () => []));
+    for (let c = 0; c < cols; c++) {
+        for (let r = 0; r < rows; r++) {
+            grid[c][r].length = 0; // Clear without allocating new memory
+        }
+    }
     
     for (let p of particles) {
         let col = Math.floor(p.x / CELL_SIZE);
@@ -82,13 +87,13 @@ function updatePhysics() {
                     if (dy < -WORLD_HEIGHT * 0.5) dy += WORLD_HEIGHT;
 
                     const distSq = dx * dx + dy * dy;
-                    if (distSq > 6400) continue; // 80^2
+                    if (distSq > 25600) continue; // 160^2
 
                     const dist = Math.sqrt(distSq);
                     const force = attractions[p1.type][p2.type];
 
                     // Attraction
-                    if (dist > REPULSION_RANGE && dist < 80) {
+                    if (dist > REPULSION_RANGE && dist < 160) {
                         const f = force * forceStrength / dist;
                         fx += f * dx;
                         fy += f * dy;
@@ -126,6 +131,13 @@ function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#111";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw World Border
+    const borderX = -cameraX * zoom + canvas.width / 2;
+    const borderY = -cameraY * zoom + canvas.height / 2;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)"; // Subtle modern gray line
+    ctx.lineWidth = 2;
+    ctx.strokeRect(borderX, borderY, WORLD_WIDTH * zoom, WORLD_HEIGHT * zoom);
 
     // Draw Particles using Camera
     for (let p of particles) {
