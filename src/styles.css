@@ -7,7 +7,6 @@
   --link-more: #3a4744;
   --node: #8fd3b0;
   --node-inert: #4b5c57;
-  --accent: #f2c46d;
   --halo: #0d1412;
   color-scheme: dark;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -42,7 +41,7 @@ footer {
   background: none; border: 0; border-radius: 6px; padding: 4px 6px; cursor: pointer;
 }
 .crumb:hover { background: var(--bg-raised); color: var(--fg); }
-.crumb.current { color: var(--accent); font-weight: 600; }
+.crumb.current { color: var(--fg); font-weight: 600; }
 .crumb.unnamed { letter-spacing: 1px; }
 .sep { color: #3d4d48; font-size: 12px; }
 
@@ -57,11 +56,14 @@ svg.tree {
 
 /* Picking is done by nearest-dot in the renderer; only labels, the center
    title and the up arrow take pointer events directly. */
-.node .dot { fill: var(--node); pointer-events: none; }
+.node .dot {
+  fill: var(--node); pointer-events: none;
+  transform-box: fill-box; transform-origin: center; transition: transform 120ms ease-out;
+}
 .node.inert .dot { fill: var(--node-inert); }
-.node.center .dot { fill: var(--accent); }
-.node.hovered .dot { fill: var(--accent); }
-.node.hovered text.label { fill: var(--accent); }
+/* Hover = the dot (or up arrow) grows; text stays as is. */
+.node.hovered .dot { transform: scale(1.8); }
+.node.center.hovered .dot { transform: scale(1.25); }
 .node.exiting, .node.exiting * { pointer-events: none !important; }
 
 .node text {
@@ -70,11 +72,14 @@ svg.tree {
 }
 .node.more text.label { fill: var(--fg-muted); font-style: italic; }
 .node .title { font-size: 13px; font-weight: 600; }
-.node .center-title { fill: var(--accent); }
+.node .center-title { fill: var(--fg); }
 .slot-ui .stub { stroke: var(--link); stroke-width: 1.2; stroke-dasharray: 2 3; }
-.slot-ui .arrow { fill: none; stroke: var(--node); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.slot-ui .arrow {
+  fill: none; stroke: var(--node); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  transform-box: fill-box; transform-origin: center; transition: transform 120ms ease-out;
+}
 .slot-ui .slot-hit { fill: transparent; }
-.node.slot.hovered .arrow { stroke: var(--accent); }
+.node.slot.hovered .arrow { transform: scale(1.4); }
 
 /* Preview card */
 .card {
@@ -90,7 +95,7 @@ svg.tree {
 .card-note { font-size: 12px; margin-top: 6px; color: var(--fg-muted); }
 .card-list { margin: 6px 0 0; padding-left: 16px; font-size: 12px; }
 .card-open {
-  margin-top: 8px; font: inherit; font-size: 13px; color: var(--bg); background: var(--accent);
+  margin-top: 8px; font: inherit; font-size: 13px; color: var(--bg); background: var(--node);
   border: 0; border-radius: 6px; padding: 5px 10px; cursor: pointer;
 }
 .italic { font-style: italic; }
