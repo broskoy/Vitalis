@@ -6,7 +6,7 @@
   --link: #3f6b5c;
   --link-more: #3a4744;
   --node: #8fd3b0;
-  --node-unnamed: #5d7a70;
+  --node-inert: #4b5c57;
   --accent: #f2c46d;
   --halo: #0d1412;
   color-scheme: dark;
@@ -53,38 +53,28 @@ svg.tree {
   -webkit-touch-callout: none;
 }
 .link { fill: none; stroke: var(--link); stroke-width: 1.3; pointer-events: none; }
-.link-g.more .link { stroke: var(--link-more); stroke-dasharray: 2 3; }
-.link-hit { fill: none; stroke: transparent; stroke-width: 14; cursor: pointer; }
-.link-g.center .link-hit, .link-g.exiting .link-hit { pointer-events: none; }
-.link-g.ring:hover .link { stroke: var(--node); }
+.link.more { stroke: var(--link-more); stroke-dasharray: 2 3; }
 
-/* "Clean" style: expanded internal nodes have no dot; the branch is the target. */
-.tree.clean .node.internal .dot { display: none; }
-
-.node { cursor: pointer; }
-.node.exiting { pointer-events: none; }
-.node .hit { fill: transparent; }
-.node .dot { fill: var(--node); }
-.node.unnamed .dot { fill: var(--node-unnamed); }
-.node.collapsed .dot { stroke: var(--node); stroke-width: 1.5; stroke-opacity: 0.45; paint-order: stroke; }
-.node.more .dot { fill: var(--link-more); }
+/* Picking is done by nearest-dot in the renderer; only labels, the center
+   title and the up arrow take pointer events directly. */
+.node .dot { fill: var(--node); pointer-events: none; }
+.node.inert .dot { fill: var(--node-inert); }
 .node.center .dot { fill: var(--accent); }
-.node.center { cursor: n-resize; }
-.node:hover .dot { fill: var(--accent); }
+.node.hovered .dot { fill: var(--accent); }
+.node.hovered text.label { fill: var(--accent); }
+.node.exiting, .node.exiting * { pointer-events: none !important; }
 
 .node text {
   font-size: 11px; fill: var(--fg);
   stroke: var(--halo); stroke-width: 3px; stroke-linejoin: round; paint-order: stroke;
-  pointer-events: none;
 }
-.node.unnamed text.label, .node.more text.label { fill: var(--fg-muted); font-style: italic; }
+.node.more text.label { fill: var(--fg-muted); font-style: italic; }
 .node .title { font-size: 13px; font-weight: 600; }
 .node .center-title { fill: var(--accent); }
 .slot-ui .stub { stroke: var(--link); stroke-width: 1.2; stroke-dasharray: 2 3; }
 .slot-ui .arrow { fill: none; stroke: var(--node); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .slot-ui .slot-hit { fill: transparent; }
-.node.slot { cursor: n-resize; }
-.node.slot:hover .arrow { stroke: var(--accent); }
+.node.slot.hovered .arrow { stroke: var(--accent); }
 
 /* Preview card */
 .card {
@@ -105,9 +95,5 @@ svg.tree {
 }
 .italic { font-style: italic; }
 .muted { color: var(--fg-muted); }
-
-.style-toggle { font: inherit; font-size: 11px; color: var(--fg-muted); background: none; border: 1px solid #2a3a35; border-radius: 6px; padding: 2px 8px; cursor: pointer; }
-.style-toggle:hover { color: var(--fg); }
-footer .right { display: flex; gap: 12px; align-items: center; }
 
 @media (max-width: 520px) { .hint { display: none; } }

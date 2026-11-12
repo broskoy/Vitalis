@@ -39,8 +39,8 @@ const MIN_INNER_LABEL_PX = 90;
 export function nodeSize(n: ViewNode, role: Role): number {
   if (role === 'center') return 9;
   if (role === 'slot') return 0;
-  if (n.kind === 'more') return 2.5;
-  return 2.5 + Math.min(4, Math.log10(n.numTips + 1) * 1.2);
+  // Uniform small dots; clade size is already shown by the wedge's angle.
+  return n.kind === 'more' ? 2.5 : 3;
 }
 
 export function displayName(n: ViewNode): string {

@@ -18,6 +18,23 @@ import { displayName, layoutView, type Role } from '../layout/radial';
 
 const DURATION = 600;
 const TAU = Math.PI * 2;
+/** How far (px) from a dot the pointer may land and still pick it. */
+const PICK_REACH_MOUSE = 16;
+const PICK_REACH_TOUCH = 28;
+/** Within this distance a dot wins even over a label under the pointer. */
+const DOT_PRIORITY = 12;
+
+interface Press {
+  key: string | null;
+  x: number;
+  y: number;
+  fired: boolean;
+  timer: number;
+}
+
+/** Ring nodes that can't be focused (species tips, "+N more"): drawn greyed out. */
+const isInert = (d: { role: Role; node: ViewNode }) =>
+  d.role === 'ring' && (d.node.isTip || d.node.kind === 'more');
 
 /** Animated per-node state. */
 interface Vis {
@@ -81,7 +98,8 @@ export class TreeRenderer {
   private width = 0;
   private height = 0;
 
-  private press: { key: string; timer: number; fired: boolean } | null = null;
+  private press: Press | null = null;
+  private hoverKey: string | null = null;
 
   constructor(
     el: SVGSVGElement,
@@ -92,9 +110,7 @@ export class TreeRenderer {
     this.stage = this.svg.append('g');
     this.linkLayer = this.stage.append('g').attr('class', 'links');
     this.nodeLayer = this.stage.append('g').attr('class', 'nodes');
-    this.svg.on('pointerup', (ev: PointerEvent) => {
-      if (ev.target === el) this.events.onBackground();
-    });
+    this.bindEvents();
   }
 
   resize(width: number, height: number) {
@@ -113,6 +129,7 @@ export class TreeRenderer {
 
   show(view: View, animate: boolean) {
     const firstRender = this.view === null;
+    this.hoverKey = null;
     this.view = view;
     const { outer, margin } = this.geometry();
     const layout = layoutView(view, outer, margin);
@@ -300,26 +317,17 @@ export class TreeRenderer {
   private join() {
     const items = [...this.items.values()];
 
-    // Each link = visible path + wide transparent hit path, so a node can be
-    // hovered/tapped anywhere along its incoming branch (bigger touch target).
     this.linkLayer
-      .selectAll<SVGGElement, Item>('g.link-g')
+      .selectAll<SVGPathElement, Item>('path')
       .data(items.filter((d) => d.parentKey), (d) => d.key)
-      .join((enter) => {
-        const g = enter.append('g');
-        g.append('path').attr('class', 'link-hit');
-        g.append('path').attr('class', 'link');
-        this.bindEvents(g);
-        return g;
-      })
-      .attr('class', (d) => `link-g ${d.role} ${d.node.kind}${d.exiting ? ' exiting' : ''}`);
+      .join('path')
+      .attr('class', (d) => `link ${d.node.kind}`);
 
     const nodes = this.nodeLayer
       .selectAll<SVGGElement, Item>('g.node')
       .data(items, (d) => d.key)
       .join((enter) => {
         const g = enter.append('g').attr('class', 'node');
-        g.append('circle').attr('class', 'hit');
         g.append('circle').attr('class', 'dot');
         g.append('text').attr('class', 'label').attr('dy', '0.32em');
         g.append('text').attr('class', 'title center-title').attr('y', 26).attr('text-anchor', 'middle');
@@ -327,7 +335,6 @@ export class TreeRenderer {
         slot.append('line').attr('class', 'stub');
         slot.append('rect').attr('class', 'slot-hit').attr('x', -18).attr('y', -16).attr('width', 36).attr('height', 32);
         slot.append('path').attr('class', 'arrow').attr('d', 'M-7,4L0,-4L7,4');
-        this.bindEvents(g);
         return g;
       });
 
@@ -337,10 +344,8 @@ export class TreeRenderer {
           'node',
           d.role,
           d.node.kind,
-          d.node.name ? 'named' : 'unnamed',
-          d.node.isTip ? 'tip' : '',
-          d.node.collapsed ? 'collapsed' : '',
-          d.role === 'ring' && d.node.children.length ? 'internal' : '',
+          isInert(d) ? 'inert' : '',
+          d.key === this.hoverKey ? 'hovered' : '',
           d.exiting ? 'exiting' : '',
         ].join(' '),
       )
@@ -355,14 +360,15 @@ export class TreeRenderer {
   private draw() {
     const cur = this.cur;
 
-    this.linkLayer.selectAll<SVGGElement, Item>('g.link-g').each(function (d) {
-      const [hit, path] = this.children as unknown as SVGPathElement[];
+    this.linkLayer.selectAll<SVGPathElement, Item>('path').each(function (d) {
       const c = cur.get(d.key);
       const p = d.parentKey ? cur.get(d.parentKey) : undefined;
-      const dAttr = c && p ? stepPath(p.th, p.r, c.th, c.r) : '';
-      hit.setAttribute('d', dAttr);
-      path.setAttribute('d', dAttr);
-      if (c) path.setAttribute('opacity', String(c.lo * c.o));
+      if (!c || !p) {
+        this.setAttribute('d', '');
+        return;
+      }
+      this.setAttribute('d', stepPath(p.th, p.r, c.th, c.r));
+      this.setAttribute('opacity', String(c.lo * c.o));
     });
 
     this.nodeLayer.selectAll<SVGGElement, Item>('g.node').each(function (d) {
@@ -370,9 +376,8 @@ export class TreeRenderer {
       if (!v) return;
       this.setAttribute('transform', `translate(${px(v.th, v.r)},${py(v.th, v.r)})`);
       this.setAttribute('opacity', String(v.o));
-      const [hit, dot, label, ctitle, slotUi] = this.children as unknown as SVGElement[];
+      const [dot, label, ctitle, slotUi] = this.children as unknown as SVGElement[];
       dot.setAttribute('r', String(Math.max(0, v.size)));
-      hit.setAttribute('r', String(d.role === 'slot' ? 0 : Math.max(12, v.size + 6)));
 
       // Radial label, flipped on the left half so it never reads upside down.
       const deg = (v.th * 180) / Math.PI - 90;
@@ -391,35 +396,86 @@ export class TreeRenderer {
     });
   }
 
-  private bindEvents(g: Selection<SVGGElement, Item, SVGGElement, unknown>) {
-    g.on('pointerdown', (ev: PointerEvent, d) => {
-      if (d.exiting) return;
-      this.clearPress();
-      const press = {
-        key: d.key,
-        fired: false,
-        timer: window.setTimeout(() => {
-          press.fired = true;
-          this.events.onLongPress(d.key);
-        }, 500),
-      };
-      this.press = press;
-      if (ev.pointerType === 'mouse') this.events.onHover(null, 0, 0);
-    })
-      .on('pointerup', (ev: PointerEvent, d) => {
-        ev.stopPropagation();
+  /**
+   * Hit testing. Dots are tiny, so instead of per-element hit areas we pick the
+   * NEAREST visible node within reach of the pointer (more forgiving on touch).
+   * Pressing a node's label, the center title or the up arrow picks it directly.
+   */
+  private pick(ev: PointerEvent): string | null {
+    const nearest = this.nearest(ev);
+    // A dot very close to the pointer beats a label/title that happens to
+    // overlap it (labels can be long and crowd neighbours on small screens).
+    if (nearest && nearest.dist < DOT_PRIORITY) return nearest.key;
+    const direct = (ev.target as Element | null)?.closest?.('g.node');
+    if (direct) {
+      const d = select<Element, Item>(direct).datum();
+      if (d && !d.exiting) return d.key;
+    }
+    return nearest?.key ?? null;
+  }
+
+  private nearest(ev: PointerEvent): { key: string; dist: number } | null {
+    const rect = (this.svg.node() as SVGSVGElement).getBoundingClientRect();
+    const x = ev.clientX - rect.left - this.width / 2;
+    const y = ev.clientY - rect.top - this.height / 2;
+    let best: string | null = null;
+    let bestDist = ev.pointerType === 'mouse' ? PICK_REACH_MOUSE : PICK_REACH_TOUCH;
+    for (const it of this.items.values()) {
+      const v = this.cur.get(it.key);
+      if (it.exiting || !v || v.o < 0.5) continue;
+      const dist = Math.hypot(px(v.th, v.r) - x, py(v.th, v.r) - y);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = it.key;
+      }
+    }
+    return best ? { key: best, dist: bestDist } : null;
+  }
+
+  private setHover(key: string | null, ev?: PointerEvent) {
+    if (key === this.hoverKey) return;
+    this.hoverKey = key;
+    this.nodeLayer.selectAll<SVGGElement, Item>('g.node').classed('hovered', (d) => d.key === key);
+    (this.svg.node() as SVGSVGElement).style.cursor = key ? 'pointer' : '';
+    this.events.onHover(key, ev?.clientX ?? 0, ev?.clientY ?? 0);
+  }
+
+  private bindEvents() {
+    this.svg
+      .on('pointerdown', (ev: PointerEvent) => {
+        this.clearPress();
+        const key = this.pick(ev);
+        const press: Press = { key, x: ev.clientX, y: ev.clientY, fired: false, timer: 0 };
+        if (key) {
+          press.timer = window.setTimeout(() => {
+            press.fired = true;
+            this.events.onLongPress(key);
+          }, 500);
+        }
+        this.press = press;
+      })
+      .on('pointermove', (ev: PointerEvent) => {
+        if (ev.pointerType === 'mouse') {
+          if (!this.press) this.setHover(this.pick(ev), ev);
+        } else if (this.press && Math.hypot(ev.clientX - this.press.x, ev.clientY - this.press.y) > 10) {
+          this.clearPress(); // finger is dragging, not tapping
+        }
+      })
+      .on('pointerup', (ev: PointerEvent) => {
         const press = this.press;
         this.clearPress();
-        if (!press || press.key !== d.key || press.fired || d.exiting) return;
-        this.events.onTap(d.key, ev.pointerType);
+        if (!press || press.fired) return;
+        const key = this.pick(ev);
+        if (!key && !press.key) this.events.onBackground();
+        else if (key && key === press.key) {
+          if (ev.pointerType === 'mouse') this.setHover(null);
+          this.events.onTap(key, ev.pointerType);
+        }
       })
       .on('pointercancel', () => this.clearPress())
-      .on('pointerenter', (ev: PointerEvent, d) => {
-        if (ev.pointerType === 'mouse' && !d.exiting) this.events.onHover(d.key, ev.clientX, ev.clientY);
-      })
       .on('pointerleave', (ev: PointerEvent) => {
         this.clearPress();
-        if (ev.pointerType === 'mouse') this.events.onHover(null, 0, 0);
+        if (ev.pointerType === 'mouse') this.setHover(null);
       })
       .on('contextmenu', (ev: Event) => ev.preventDefault());
   }

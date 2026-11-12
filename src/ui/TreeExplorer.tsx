@@ -7,22 +7,6 @@ import { PreviewCard, type CardState } from './PreviewCard';
 
 const HOVER_DELAY = 150;
 
-function readPref(name: string, fallback: boolean): boolean {
-  try {
-    const v = localStorage.getItem(`vitalis.${name}`);
-    return v === null ? fallback : v === '1';
-  } catch {
-    return fallback;
-  }
-}
-function writePref(name: string, value: boolean) {
-  try {
-    localStorage.setItem(`vitalis.${name}`, value ? '1' : '0');
-  } catch {
-    /* storage unavailable: preference just isn't remembered */
-  }
-}
-
 /** Focused node lives in the URL hash so Back/Forward and links work. */
 function keyFromHash(p: TreeProvider): string {
   const id = decodeURIComponent(location.hash.slice(1));
@@ -34,9 +18,6 @@ export const TreeExplorer: Component<{ provider: TreeProvider }> = (props) => {
   const [centerKey, setCenterKey] = createSignal(keyFromHash(p));
   const [view, setView] = createSignal<View>(buildView(p, centerKey()));
   const [card, setCard] = createSignal<CardState | null>(null);
-  // Temporary A/B toggle: dots on internal nodes vs. classic dot-less branches.
-  const [clean, setClean] = createSignal(readPref('clean', true));
-  createEffect(() => writePref('clean', clean()));
 
   let container!: HTMLDivElement;
   let svg!: SVGSVGElement;
@@ -148,7 +129,7 @@ export const TreeExplorer: Component<{ provider: TreeProvider }> = (props) => {
         <Breadcrumb provider={p} centerKey={centerKey()} onSelect={navigate} />
       </header>
       <main ref={container}>
-        <svg ref={svg} class="tree" classList={{ clean: clean() }} />
+        <svg ref={svg} class="tree" />
       </main>
       <Show when={card()}>
         {(c) => (
@@ -164,12 +145,7 @@ export const TreeExplorer: Component<{ provider: TreeProvider }> = (props) => {
       </Show>
       <footer>
         <span>Data: Open Tree of Life synthetic tree (CC0)</span>
-        <span class="right">
-          <span class="hint">click a node or branch to focus · center, ↑ or Esc to go up</span>
-          <button class="style-toggle" onClick={() => setClean(!clean())}>
-            {clean() ? 'Show node dots' : 'Hide node dots'}
-          </button>
-        </span>
+        <span class="hint">click to focus · center, ↑ or Esc to go up</span>
       </footer>
     </div>
   );
