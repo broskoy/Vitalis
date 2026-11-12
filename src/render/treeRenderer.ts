@@ -436,7 +436,8 @@ export class TreeRenderer {
     if (key === this.hoverKey) return;
     this.hoverKey = key;
     this.nodeLayer.selectAll<SVGGElement, Item>('g.node').classed('hovered', (d) => d.key === key);
-    (this.svg.node() as SVGSVGElement).style.cursor = key ? 'pointer' : '';
+    const item = key ? this.items.get(key) : undefined;
+    (this.svg.node() as SVGSVGElement).style.cursor = item && !isInert(item) ? 'pointer' : '';
     this.events.onHover(key, ev?.clientX ?? 0, ev?.clientY ?? 0);
   }
 

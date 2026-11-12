@@ -64,6 +64,8 @@ svg.tree {
 /* Hover = the dot (or up arrow) grows; text stays as is. */
 .node.hovered .dot { transform: scale(1.8); }
 .node.center.hovered .dot { transform: scale(1.25); }
+/* Grey (non-focusable) nodes don't react, so they don't read as clickable. */
+.node.inert.hovered .dot { transform: none; }
 .node.exiting, .node.exiting * { pointer-events: none !important; }
 
 .node text {
