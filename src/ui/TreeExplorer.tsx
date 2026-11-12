@@ -50,9 +50,15 @@ export const TreeExplorer: Component<{ provider: TreeProvider }> = (props) => {
         const v = view();
         const node = v.nodes.get(key);
         if (!node) return;
-        if (key === v.center.key || key === v.parentSlot?.key) {
+        if (key === v.parentSlot?.key) {
           hideCard();
           goUp();
+          return;
+        }
+        // The center is "where you are": tapping it toggles its card.
+        if (key === v.center.key) {
+          if (card()?.pinned && card()?.node.key === key) hideCard();
+          else showCard(key, true);
           return;
         }
         // "+N more" wedges and species tips have nothing to drill into: show the card.
@@ -136,6 +142,7 @@ export const TreeExplorer: Component<{ provider: TreeProvider }> = (props) => {
           <PreviewCard
             provider={p}
             state={c()}
+            isCenter={c().node.key === view().center.key}
             onOpen={(key) => {
               hideCard();
               navigate(key);
@@ -145,7 +152,7 @@ export const TreeExplorer: Component<{ provider: TreeProvider }> = (props) => {
       </Show>
       <footer>
         <span>Data: Open Tree of Life synthetic tree (CC0)</span>
-        <span class="hint">click to focus · center, ↑ or Esc to go up</span>
+        <span class="hint">click to focus · up arrow, ↑ or Esc to go up</span>
       </footer>
     </div>
   );

@@ -29,6 +29,8 @@ function representative(p: TreeProvider, id: string): string | null {
 export const PreviewCard: Component<{
   provider: TreeProvider;
   state: CardState;
+  /** The card belongs to the focused node: no "Open" (already there). */
+  isCenter: boolean;
   onOpen: (key: string) => void;
 }> = (props) => {
   const n = () => props.state.node;
@@ -81,7 +83,7 @@ export const PreviewCard: Component<{
         <Show when={chainNames().length > 1}>
           <div class="card-note">Chain: {chainNames().join(' › ')}</div>
         </Show>
-        <Show when={props.state.pinned && !n().isTip}>
+        <Show when={props.state.pinned && !n().isTip && !props.isCenter}>
           <button class="card-open" onClick={() => props.onOpen(n().key)}>
             Open ›
           </button>
